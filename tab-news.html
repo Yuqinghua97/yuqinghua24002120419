@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<!--
+  功能名称: 新闻 Tab 选项卡
+  作者: 于清华
+  建立时间: 2026-11-04
+  使用大模型: GLM-5.3-Flash
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tab-news · 新闻选项卡</title>
+<style>
+  /* ===== yqh_ 设计令牌（延续画廊极简主义） ===== */
+  :root {
+    --yqh_bg:        #2B2B2B;
+    --yqh_bg-card:   #333333;
+    --yqh_text:      #F5F1EA;
+    --yqh_text-dim:  #9A9488;
+    --yqh_accent:    #C9A96E;   /* 金属金激活态 */
+    --yqh_rule:      #3E3A35;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--yqh_bg);
+    color: var(--yqh_text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .yqh_page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ===== Header ===== */
+  .yqh_header {
+    padding: 44px 0 28px;
+    border-bottom: 1px solid var(--yqh_rule);
+    position: relative;
+  }
+
+  .yqh_back {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--yqh_accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .yqh_back:hover { color: var(--yqh_text); }
+
+  .yqh_header-meta {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--yqh_accent);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .yqh_header-title {
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== Tab 选项卡栏 ===== */
+  .yqh_tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--yqh_rule);
+    margin-top: 8px;
+  }
+
+  .yqh_tab-item {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 16px 20px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--yqh_text-dim);
+    cursor: pointer;
+    position: relative;
+    letter-spacing: 0.05em;
+    transition: color 0.25s ease;
+  }
+
+  /* 选中态：金色文字 + 底部金色指示条 */
+  .yqh_tab-item.yqh_active { color: var(--yqh_accent); font-weight: 600; }
+
+  .yqh_tab-item::after {
+    content: "";
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--yqh_accent);
+    transform: scaleX(0);
+    transition: transform 0.25s ease;
+  }
+
+  .yqh_tab-item.yqh_active::after { transform: scaleX(1); }
+
+  .yqh_tab-item:hover { color: var(--yqh_text); }
+  .yqh_tab-item.yqh_active:hover { color: var(--yqh_accent); }
+
+  /* ===== 内容面板 ===== */
+  .yqh_panel {
+    display: none;
+    padding-top: 28px;
+  }
+
+  .yqh_panel.yqh_active { display: block; }
+
+  .yqh_news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .yqh_news-item {
+    background: var(--yqh_bg-card);
+    border: 1px solid var(--yqh_rule);
+    border-radius: 2px;
+    padding: 18px 22px;
+    transition: border-color 0.25s ease;
+  }
+
+  .yqh_news-item:hover { border-color: var(--yqh_accent); }
+
+  .yqh_news-item h3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .yqh_news-item p {
+    font-size: 13px;
+    color: var(--yqh_text-dim);
+    line-height: 1.7;
+  }
+
+  .yqh_news-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yqh_accent);
+  }
+
+  /* ===== 说明区 ===== */
+  .yqh_note {
+    margin-top: 40px;
+    padding: 18px 22px;
+    border: 1px solid var(--yqh_rule);
+    font-size: 12px;
+    color: var(--yqh_text-dim);
+    line-height: 2;
+  }
+
+  .yqh_note strong { color: var(--yqh_text); }
+
+  .yqh_note code {
+    background: var(--yqh_bg-card);
+    padding: 1px 6px;
+    border-radius: 2px;
+    color: var(--yqh_accent);
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 600px) {
+    .yqh_header { padding: 32px 0 22px; }
+    .yqh_header-title { font-size: 24px; }
+    .yqh_tabs { overflow-x: auto; }
+    .yqh_tab-item { padding: 14px 14px 12px; font-size: 13px; white-space: nowrap; }
+    .yqh_tab-item::after { left: 14px; right: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="yqh_page">
+
+  <header class="yqh_header">
+    <a href="index.html" class="yqh_back">← 返回首页</a>
+    <div class="yqh_header-meta">CHAPTER 05 · TAB COMPONENT</div>
+    <h1 class="yqh_header-title">新闻选项卡</h1>
+  </header>
+
+  <main>
+    <!-- Tab 选项卡：国内新闻为默认选中项 -->
+    <div class="yqh_tabs" id="yqh_tabs" role="tablist">
+      <button class="yqh_tab-item yqh_active" data-yqh-panel="yqh_panel_cn" role="tab">国内新闻</button>
+      <button class="yqh_tab-item" data-yqh-panel="yqh_panel_prov" role="tab">省内新闻</button>
+      <button class="yqh_tab-item" data-yqh-panel="yqh_panel_world" role="tab">国际新闻</button>
+      <button class="yqh_tab-item" data-yqh-panel="yqh_panel_hot" role="tab">最热新闻</button>
+    </div>
+
+    <div class="yqh_panels">
+      <!-- 国内新闻（默认面板） -->
+      <section class="yqh_panel yqh_active" id="yqh_panel_cn" role="tabpanel">
+        <div class="yqh_news-list">
+          <article class="yqh_news-item">
+            <h3>全国数字经济发展大会在京召开</h3>
+            <p>会议提出加快建设数字中国，推动数字经济与实体经济深度融合，培育壮大新质生产力。</p>
+            <div class="yqh_news-meta"><span>国内 · 要闻</span><span>2026-11-04</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>国家统计局发布三季度经济运行数据</h3>
+            <p>前三季度国民经济运行总体平稳、稳中有进，主要指标处于合理区间。</p>
+            <div class="yqh_news-meta"><span>国内 · 财经</span><span>2026-11-03</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>全国铁路实行新列车运行图</h3>
+            <p>调图后全国铁路客货运输能力进一步提升，京沪、京广等干线开行密度增加。</p>
+            <div class="yqh_news-meta"><span>国内 · 民生</span><span>2026-11-02</span></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 省内新闻 -->
+      <section class="yqh_panel" id="yqh_panel_prov" role="tabpanel">
+        <div class="yqh_news-list">
+          <article class="yqh_news-item">
+            <h3>全省重点项目建设推进会在沈召开</h3>
+            <p>会议通报前三季度全省重点项目完成情况，部署四季度冲刺阶段各项任务。</p>
+            <div class="yqh_news-meta"><span>省内 · 政务</span><span>2026-11-04</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>我省新增三家国家级技术创新示范企业</h3>
+            <p>三家企业聚焦高端装备与新材料领域，研发投入占比均超过百分之五。</p>
+            <div class="yqh_news-meta"><span>省内 · 科技</span><span>2026-11-03</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>秋季文化旅游季在多地同步启幕</h3>
+            <p>文旅季覆盖全省十四个市，推出百场展演与惠民消费活动。</p>
+            <div class="yqh_news-meta"><span>省内 · 文旅</span><span>2026-11-01</span></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 国际新闻 -->
+      <section class="yqh_panel" id="yqh_panel_world" role="tabpanel">
+        <div class="yqh_news-list">
+          <article class="yqh_news-item">
+            <h3>联合国气候变化大会进入关键谈判周</h3>
+            <p>各缔约方就减排资金安排展开磋商，发展中国家呼吁发达国家兑现承诺。</p>
+            <div class="yqh_news-meta"><span>国际 · 环境</span><span>2026-11-04</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>国际空间站完成新一批科学实验交接</h3>
+            <p>本批次实验涵盖微重力材料与生命科学领域，数据将向全球科研机构开放。</p>
+            <div class="yqh_news-meta"><span>国际 · 航天</span><span>2026-11-03</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>全球人工智能治理倡议获多国响应</h3>
+            <p>多国代表表示支持建立开放、公平的 AI 治理框架，推动技术普惠共享。</p>
+            <div class="yqh_news-meta"><span>国际 · 科技</span><span>2026-11-02</span></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 最热新闻 -->
+      <section class="yqh_panel" id="yqh_panel_hot" role="tabpanel">
+        <div class="yqh_news-list">
+          <article class="yqh_news-item">
+            <h3>热搜第一：新一轮促销活动点燃消费热情</h3>
+            <p>多家电商平台开启年末大促，线上线下联动，相关话题阅读量突破十亿。</p>
+            <div class="yqh_news-meta"><span>最热 · 消费</span><span>2026-11-04</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>热搜第二：城市马拉松秋季赛程公布</h3>
+            <p>多个城市公布秋季马拉松报名时间，赛事将增设全民健康跑组别。</p>
+            <div class="yqh_news-meta"><span>最热 · 体育</span><span>2026-11-04</span></div>
+          </article>
+          <article class="yqh_news-item">
+            <h3>热搜第三：国产科幻新片定档引发期待</h3>
+            <p>影片公布首支预告片，主创团队表示将呈现本土化的硬科幻叙事。</p>
+            <div class="yqh_news-meta"><span>最热 · 影视</span><span>2026-11-03</span></div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="yqh_note">
+      <strong>技术说明 ·</strong><br>
+      • JS 外部引用：<code>&lt;script src="js/yqh_tabs.js"&gt;&lt;/script&gt;</code><br>
+      • 可复用：任意页面引入后调用 <code>yqh_initTabs('#选择器')</code> 即可初始化一组选项卡<br>
+      • 监听事件逻辑：点击时<strong>先清除</strong>所有选项卡的 <code>yqh_active</code> 选中状态，<strong>再设置</strong>当前元素为选中态<br>
+      • 面板联动：选项卡通过 <code>data-yqh-panel</code> 属性对应内容面板 <code>id</code>
+    </div>
+  </main>
+
+</div>
+
+<!-- 外部引入可复用 Tab 组件脚本 -->
+<script src="js/yqh_tabs.js"></script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucide Icons · Icon Archive</title>
+<style>
+  /* ===== yqh_ 设计令牌 ===== */
+  :root {
+    --yqh_bg:        #2B2B2B;
+    --yqh_bg-alt:    #343434;
+    --yqh_text:      #F5F1EA;
+    --yqh_text-dim:  #9A9488;
+    --yqh_accent:    #8B2635;
+    --yqh_gold:      #C9A96E;
+    --yqh_rule:      #4A4640;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--yqh_bg);
+    color: var(--yqh_text);
+    font-family: "Inter", "Segoe UI", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.55;
+    min-height: 100%;
+  }
+
+  /* ===== Lucide SVG 基础样式（仅限定在 icon cell 内） ===== */
+  .yqh_icon-cell [data-lucide] {
+    color: var(--yqh_text);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .yqh_topbar {
+    border-bottom: 1px solid var(--yqh_rule);
+    padding: 22px 48px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .yqh_back {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--yqh_gold);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.25s ease;
+  }
+  .yqh_back:hover { color: var(--yqh_text); }
+
+  .yqh_chapter {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--yqh_text-dim);
+    font-weight: 500;
+  }
+
+  /* ===== 主体布局 ===== */
+  .yqh_layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 66px - 56px);
+  }
+
+  /* ===== 侧栏 ===== */
+  .yqh_sidebar {
+    border-right: 1px solid var(--yqh_rule);
+    padding: 56px 32px 48px;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 66px);
+    overflow-y: auto;
+  }
+
+  .yqh_sidebar h2 {
+    font-size: 38px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    line-height: 1.05;
+  }
+
+  .yqh_sidebar .yqh_sub {
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--yqh_accent);
+    margin-bottom: 40px;
+    font-weight: 600;
+  }
+
+  .yqh_sidebar .yqh_desc {
+    font-size: 13px;
+    color: var(--yqh_text-dim);
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+
+  .yqh_sidebar .yqh_cat-label {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--yqh_gold);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .yqh_cat-list { list-style: none; }
+
+  .yqh_cat-list li a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--yqh_rule);
+    color: var(--yqh_text);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+    transition: color 0.2s ease;
+  }
+  .yqh_cat-list li a:hover { color: var(--yqh_gold); }
+  .yqh_cat-list li a.yqh_active { color: var(--yqh_gold); }
+  .yqh_cat-list li a .yqh_count {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--yqh_text-dim);
+  }
+
+  /* ===== 主内容 ===== */
+  .yqh_main {
+    padding: 56px 48px 80px;
+    max-width: 1200px;
+  }
+
+  .yqh_section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--yqh_rule);
+  }
+
+  .yqh_section-title {
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--yqh_gold);
+    font-weight: 600;
+  }
+
+  .yqh_section-note {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--yqh_text-dim);
+  }
+
+  /* ===== 图标网格 ===== */
+  .yqh_icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0;
+    border: 1px solid var(--yqh_rule);
+    margin-bottom: 56px;
+  }
+
+  .yqh_icon-cell {
+    aspect-ratio: 1;
+    border-right: 1px solid var(--yqh_rule);
+    border-bottom: 1px solid var(--yqh_rule);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.25s ease;
+    position: relative;
+    padding: 16px;
+  }
+  .yqh_icon-cell:hover { background: var(--yqh_bg-alt); }
+
+  .yqh_icon-cell svg {
+    width: 44px;
+    height: 44px;
+    color: var(--yqh_text);
+    margin-bottom: 14px;
+    transition: color 0.25s ease, transform 0.25s ease;
+  }
+  .yqh_icon-cell:hover svg { color: var(--yqh_gold); transform: scale(1.08); }
+
+  .yqh_icon-name {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--yqh_text-dim);
+    text-align: center;
+    text-transform: lowercase;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ===== 底部 ===== */
+  .yqh_foot {
+    border-top: 1px solid var(--yqh_rule);
+    padding: 22px 48px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--yqh_text-dim);
+  }
+  .yqh_foot a { color: var(--yqh_gold); text-decoration: none; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 900px) {
+    .yqh_layout { grid-template-columns: 1fr; }
+    .yqh_sidebar {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--yqh_rule);
+      padding: 40px 24px;
+    }
+    .yqh_main { padding: 40px 24px 64px; }
+    .yqh_topbar, .yqh_foot { padding-left: 24px; padding-right: 24px; }
+    .yqh_icon-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .yqh_icon-cell svg { width: 34px; height: 34px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="yqh_topbar">
+  <a href="index.html" class="yqh_back">← 返回档案首页</a>
+  <span class="yqh_chapter">CHAPTER 02 · VECTOR GRAPHIC</span>
+</header>
+
+<div class="yqh_layout">
+
+  <!-- 侧栏 -->
+  <aside class="yqh_sidebar">
+    <h2>Lucide<br>Icons</h2>
+    <div class="yqh_sub">24px · Stroke · SVG</div>
+    <p class="yqh_desc">
+      从 Feather 演化而来的统一线条图标集。通过 data-lucide 声明、JS 在浏览器端替换为内联 SVG——可设置任意颜色、尺寸、stroke-width。
+    </p>
+
+    <div class="yqh_cat-label">分类</div>
+    <ul class="yqh_cat-list">
+      <li><a href="#yqh_cat-essence" class="yqh_active"><span>Essence 本质</span><span class="yqh_count">16</span></a></li>
+      <li><a href="#yqh_cat-object"><span>Object 器物</span><span class="yqh_count">14</span></a></li>
+      <li><a href="#yqh_cat-nature"><span>Nature 自然</span><span class="yqh_count">12</span></a></li>
+      <li><a href="#yqh_cat-media"><span>Media 媒体</span><span class="yqh_count">10</span></a></li>
+    </ul>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="yqh_main">
+
+    <!-- Essence -->
+    <section id="yqh_cat-essence">
+      <div class="yqh_section-head">
+        <span class="yqh_section-title">Essence · 本质</span>
+        <span class="yqh_section-note">16 ICONS</span>
+      </div>
+      <div class="yqh_icon-grid">
+        <div class="yqh_icon-cell"><i data-lucide="home"></i><span class="yqh_icon-name">home</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="user"></i><span class="yqh_icon-name">user</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="heart"></i><span class="yqh_icon-name">heart</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="star"></i><span class="yqh_icon-name">star</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="search"></i><span class="yqh_icon-name">search</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="bell"></i><span class="yqh_icon-name">bell</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="mail"></i><span class="yqh_icon-name">mail</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="settings"></i><span class="yqh_icon-name">settings</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="menu"></i><span class="yqh_icon-name">menu</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="x"></i><span class="yqh_icon-name">x</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="check"></i><span class="yqh_icon-name">check</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="chevron-right"></i><span class="yqh_icon-name">chevron-right</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="arrow-right"></i><span class="yqh_icon-name">arrow-right</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="plus"></i><span class="yqh_icon-name">plus</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="minus"></i><span class="yqh_icon-name">minus</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="edit-3"></i><span class="yqh_icon-name">edit-3</span></div>
+      </div>
+    </section>
+
+    <!-- Object -->
+    <section id="yqh_cat-object">
+      <div class="yqh_section-head">
+        <span class="yqh_section-title">Object · 器物</span>
+        <span class="yqh_section-note">14 ICONS</span>
+      </div>
+      <div class="yqh_icon-grid">
+        <div class="yqh_icon-cell"><i data-lucide="camera"></i><span class="yqh_icon-name">camera</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="music"></i><span class="yqh_icon-name">music</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="calendar"></i><span class="yqh_icon-name">calendar</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="clock"></i><span class="yqh_icon-name">clock</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="map-pin"></i><span class="yqh_icon-name">map-pin</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="book-open"></i><span class="yqh_icon-name">book-open</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="briefcase"></i><span class="yqh_icon-name">briefcase</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="shopping-bag"></i><span class="yqh_icon-name">shopping-bag</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="gift"></i><span class="yqh_icon-name">gift</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="umbrella"></i><span class="yqh_icon-name">umbrella</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="coffee"></i><span class="yqh_icon-name">coffee</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="headphones"></i><span class="yqh_icon-name">headphones</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="pen-tool"></i><span class="yqh_icon-name">pen-tool</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="paintbrush"></i><span class="yqh_icon-name">paintbrush</span></div>
+      </div>
+    </section>
+
+    <!-- Nature -->
+    <section id="yqh_cat-nature">
+      <div class="yqh_section-head">
+        <span class="yqh_section-title">Nature · 自然</span>
+        <span class="yqh_section-note">12 ICONS</span>
+      </div>
+      <div class="yqh_icon-grid">
+        <div class="yqh_icon-cell"><i data-lucide="sun"></i><span class="yqh_icon-name">sun</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="moon"></i><span class="yqh_icon-name">moon</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="cloud"></i><span class="yqh_icon-name">cloud</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="cloud-rain"></i><span class="yqh_icon-name">cloud-rain</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="wind"></i><span class="yqh_icon-name">wind</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="droplet"></i><span class="yqh_icon-name">droplet</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="flame"></i><span class="yqh_icon-name">flame</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="leaf"></i><span class="yqh_icon-name">leaf</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="tree-pine"></i><span class="yqh_icon-name">tree-pine</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="mountain"></i><span class="yqh_icon-name">mountain</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="feather"></i><span class="yqh_icon-name">feather</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="sparkles"></i><span class="yqh_icon-name">sparkles</span></div>
+      </div>
+    </section>
+
+    <!-- Media -->
+    <section id="yqh_cat-media">
+      <div class="yqh_section-head">
+        <span class="yqh_section-title">Media · 媒体</span>
+        <span class="yqh_section-note">10 ICONS</span>
+      </div>
+      <div class="yqh_icon-grid">
+        <div class="yqh_icon-cell"><i data-lucide="play"></i><span class="yqh_icon-name">play</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="pause"></i><span class="yqh_icon-name">pause</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="skip-back"></i><span class="yqh_icon-name">skip-back</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="skip-forward"></i><span class="yqh_icon-name">skip-forward</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="volume-2"></i><span class="yqh_icon-name">volume-2</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="mic"></i><span class="yqh_icon-name">mic</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="radio"></i><span class="yqh_icon-name">radio</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="tv"></i><span class="yqh_icon-name">tv</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="image"></i><span class="yqh_icon-name">image</span></div>
+        <div class="yqh_icon-cell"><i data-lucide="video"></i><span class="yqh_icon-name">video</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="yqh_foot">
+  <span>LUCIDE · LOCAL CDN · 24 × 24</span>
+  <a href="index.html">↑ 返回首页</a>
+</footer>
+
+<script src="cdn/lucide/lucide.min.js"></script>
+<script>
+  // 初始化 Lucide 图标替换
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+
+  // 侧栏点击高亮
+  const yqh_links = document.querySelectorAll('.yqh_cat-list li a');
+  yqh_links.forEach(function(a) {
+    a.addEventListener('click', function() {
+      yqh_links.forEach(function(x) { x.classList.remove('yqh_active'); });
+      a.classList.add('yqh_active');
+    });
+  });
+</script>
+
+</body>
+</html>

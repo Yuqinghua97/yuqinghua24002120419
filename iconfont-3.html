@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>iconfont-3 · 移动端下导航 · 字体图标</title>
+<link rel="stylesheet" href="cdn/iconfont/iconfont.css">
+<link rel="stylesheet" href="cdn/font-awesome/css/all.min.css">
+<style>
+  /* ===== yqh_ 设计令牌（延续画廊极简主义） ===== */
+  :root {
+    --yqh_bg:        #1C1C1C;
+    --yqh_bg-card:   #262626;
+    --yqh_text:      #F5F1EA;
+    --yqh_text-dim:  #8A8478;
+    --yqh_accent:    #C9A96E;   /* 金属金激活态 */
+    --yqh_badge:     #8B2635;   /* 深酒红徽章 */
+    --yqh_dot:       #D93A3A;   /* 红点 */
+    --yqh_rule:      #3A3632;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--yqh_bg);
+    color: var(--yqh_text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.55;
+    overflow-x: hidden;
+  }
+
+  /* ===== 移动端容器（居中、限宽） ===== */
+  .yqh_phone {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--yqh_bg);
+    position: relative;
+    padding-bottom: 96px;  /* 给下导航留出空间 */
+  }
+
+  /* ===== 顶部状态栏 + Header ===== */
+  .yqh_header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--yqh_rule);
+    position: relative;
+  }
+
+  .yqh_back {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--yqh_accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .yqh_back:hover { color: var(--yqh_text); }
+
+  .yqh_header-title {
+    font-size: 26px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: var(--yqh_text);
+  }
+
+  .yqh_header-meta {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--yqh_gold, var(--yqh_accent));
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  /* ===== 内容占位区 ===== */
+  .yqh_content {
+    padding: 24px;
+  }
+
+  .yqh_section-head {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--yqh_text-dim);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .yqh_card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .yqh_content-card {
+    background: var(--yqh_bg-card);
+    border: 1px solid var(--yqh_rule);
+    border-radius: 2px;
+    padding: 18px 20px;
+  }
+
+  .yqh_content-card h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--yqh_text);
+    margin-bottom: 4px;
+  }
+
+  .yqh_content-card p {
+    font-size: 13px;
+    color: var(--yqh_text-dim);
+    line-height: 1.7;
+  }
+
+  .yqh_content-card .yqh_content-meta {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--yqh_accent);
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+
+  .yqh_spacer { height: 24px; }
+
+  /* ===== 固定下导航 ===== */
+  .yqh_tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    max-width: 430px;
+    margin: 0 auto;
+    background: rgba(28, 28, 28, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--yqh_rule);
+    display: flex;
+    align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .yqh_tabbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0));
+    position: relative;
+    cursor: pointer;
+    transition: color 0.25s ease, transform 0.15s ease;
+    text-decoration: none;
+    color: var(--yqh_text-dim);
+    user-select: none;
+  }
+
+  .yqh_tabbar-item:active { transform: scale(0.92); }
+
+  .yqh_tabbar-item.yqh_active {
+    color: var(--yqh_text);
+  }
+
+  /* 图标：iconfont 字体图标 与 FA 字体图标 */
+  .yqh_tabbar-item .iconfont,
+  .yqh_tabbar-item .fa {
+    font-size: 22px;
+    line-height: 1;
+    margin-bottom: 6px;
+    display: inline-block;
+  }
+
+  /* 激活态图标加金属金 */
+  .yqh_tabbar-item.yqh_active .iconfont,
+  .yqh_tabbar-item.yqh_active .fa {
+    color: var(--yqh_accent);
+  }
+
+  .yqh_tabbar-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+
+  /* ===== 徽章：右上角数字 ===== */
+  .yqh_tabbar-badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 18px); /* 相对图标中心 */
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--yqh_badge);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    letter-spacing: 0;
+    box-shadow: 0 0 0 2px var(--yqh_bg);
+    z-index: 2;
+  }
+
+  /* ===== 红点：右上角 ===== */
+  .yqh_tabbar-dot {
+    position: absolute;
+    top: 9px;
+    right: calc(50% - 15px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--yqh_dot);
+    box-shadow: 0 0 0 2px var(--yqh_bg);
+    z-index: 2;
+  }
+
+  /* ===== 说明文字 ===== */
+  .yqh_note {
+    margin-top: 28px;
+    padding: 16px 20px;
+    border: 1px solid var(--yqh_rule);
+    font-size: 12px;
+    color: var(--yqh_text-dim);
+    line-height: 1.9;
+  }
+
+  .yqh_note code {
+    background: var(--yqh_bg-card);
+    padding: 1px 6px;
+    border-radius: 2px;
+    color: var(--yqh_accent);
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 480px) {
+    .yqh_phone { max-width: 100%; }
+    .yqh_tabbar { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="yqh_phone">
+
+  <header class="yqh_header">
+    <a href="index.html" class="yqh_back">← 返回首页</a>
+    <div class="yqh_header-meta">CHAPTER 03 · FONT ICON METHOD</div>
+    <h1 class="yqh_header-title">iconfont 字体图标<br>移动端下导航</h1>
+  </header>
+
+  <main class="yqh_content">
+    <div class="yqh_section-head">content · 内容区域</div>
+
+    <div class="yqh_card-list">
+      <div class="yqh_content-card">
+        <h3>iconfont.cn 自定义图标</h3>
+        <p>shouye · shoucang · wode —— 三款来自 iconfont 平台的字形，通过 @font-face 加载为字体。</p>
+        <div class="yqh_content-meta">iconfont · font-family</div>
+      </div>
+
+      <div class="yqh_content-card">
+        <h3>Font Awesome 补充</h3>
+        <p>第 4 项 fa-envelope 来自 Font Awesome 6.5.2，同为字体图标方式，无缝混排。</p>
+        <div class="yqh_content-meta">font awesome 6.5.2</div>
+      </div>
+
+      <div class="yqh_content-card">
+        <h3>徽章与红点</h3>
+        <p>消息 tab 右上角显示数字徽章（23），收藏 tab 右上角显示小圆点。均通过绝对定位叠放于图标之上。</p>
+        <div class="yqh_content-meta">badge · red dot</div>
+      </div>
+    </div>
+
+    <div class="yqh_spacer"></div>
+
+    <div class="yqh_note">
+      <strong style="color: var(--yqh_text);">技术说明 ·</strong><br>
+      • iconfont 通过 <code>&lt;span class="iconfont icon-shouye"&gt;</code> 调用<br>
+      • Font Awesome 通过 <code>&lt;i class="fa-regular fa-envelope"&gt;</code> 调用<br>
+      • 下导航 <code>position: fixed</code> + 安全区适配 <code>env(safe-area-inset-bottom)</code><br>
+      • 徽章 / 红点使用绝对定位 + <code>box-shadow</code> 描边隔离背景
+    </div>
+  </main>
+
+  <!-- ===== 固定下导航 ===== -->
+  <nav class="yqh_tabbar" id="yqh_tabbar">
+    <a class="yqh_tabbar-item yqh_active" data-yqh-tab="home" href="#yqh_tabbar">
+      <span class="iconfont icon-shouye"></span>
+      <span class="yqh_tabbar-label">首页</span>
+    </a>
+
+    <a class="yqh_tabbar-item" data-yqh-tab="message" href="#yqh_tabbar">
+      <i class="fa-regular fa-envelope"></i>
+      <span class="yqh_tabbar-label">消息</span>
+      <span class="yqh_tabbar-badge">23</span>
+    </a>
+
+    <a class="yqh_tabbar-item" data-yqh-tab="favorite" href="#yqh_tabbar">
+      <span class="iconfont icon-shoucang"></span>
+      <span class="yqh_tabbar-label">收藏</span>
+      <span class="yqh_tabbar-dot"></span>
+    </a>
+
+    <a class="yqh_tabbar-item" data-yqh-tab="profile" href="#yqh_tabbar">
+      <span class="iconfont icon-wode"></span>
+      <span class="yqh_tabbar-label">我的</span>
+    </a>
+  </nav>
+
+</div>
+
+<script>
+  // 下导航切换激活态
+  const yqh_tabs = document.querySelectorAll('.yqh_tabbar-item');
+  yqh_tabs.forEach(function(tab) {
+    tab.addEventListener('click', function(e) {
+      e.preventDefault();
+      yqh_tabs.forEach(function(t) { t.classList.remove('yqh_active'); });
+      tab.classList.add('yqh_active');
+    });
+  });
+</script>
+
+</body>
+</html>
