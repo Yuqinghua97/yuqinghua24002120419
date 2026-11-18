@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>摇一摇 · 今日菜谱</title>
+<!--
+  文件名：mobile-sensor.html
+  作者：24002120419 于清华
+  建立时间：2026-11-18
+  使用大模型：DeepSeek-V4.1-Flash
+  功能名称：移动端"摇一摇"抽菜谱（devicemotion 合成加速度 + 18 阈值 + 1.5s 冷却 + 降级按钮）
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --yqh_bg:   #14120F;
+    --yqh_text: #F3EEE6;
+    --yqh_dim:  #9C9488;
+    --yqh_gold: #C9A96E;
+    --yqh_line: rgba(201, 169, 110, 0.22);
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(120% 60% at 50% 0%, #221D17 0%, #14120F 55%, #0E0C0A 100%);
+    color: var(--yqh_text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    padding-bottom: 40px;
+  }
+
+  .yqh_page {
+    position: relative;
+    z-index: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 18px 40px;
+  }
+
+  /* ===== 倾斜视差：背景光晕层 ===== */
+  .yqh_bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .yqh_glow {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    will-change: transform;
+  }
+  .yqh_glow--a {
+    width: 320px;
+    height: 320px;
+    left: -120px;
+    top: -60px;
+    background: radial-gradient(circle, rgba(201, 169, 110, 0.22), rgba(201, 169, 110, 0) 70%);
+  }
+  .yqh_glow--b {
+    width: 420px;
+    height: 420px;
+    right: -170px;
+    bottom: -120px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 70%);
+  }
+
+  /* ===== 顶部 ===== */
+  .yqh_top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 26px;
+  }
+
+  .yqh_back {
+    color: var(--yqh_gold);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    padding: 6px 0;
+  }
+  .yqh_back:active { opacity: 0.6; }
+
+  .yqh_kicker {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: var(--yqh_dim);
+    text-transform: uppercase;
+  }
+
+  .yqh_page-title {
+    font-size: 30px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .yqh_page-title em { font-style: normal; color: var(--yqh_gold); }
+
+  .yqh_page-sub {
+    margin-top: 8px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--yqh_dim);
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== 摇一摇区域 ===== */
+  .yqh_shaker {
+    position: relative;
+    padding: 30px 20px 22px;
+    border-radius: 22px;
+    background:
+      radial-gradient(90% 70% at 50% 0%, rgba(201, 169, 110, 0.16), rgba(201, 169, 110, 0) 70%),
+      rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--yqh_line);
+    overflow: hidden;
+    text-align: center;
+    will-change: transform;
+  }
+
+  /* 卡片内部的装饰光斑，参与视差 */
+  .yqh_orb {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform;
+  }
+  .yqh_orb--a {
+    width: 180px;
+    height: 180px;
+    left: -60px;
+    top: -50px;
+    background: radial-gradient(circle, rgba(201, 169, 110, 0.35), rgba(201, 169, 110, 0) 70%);
+  }
+  .yqh_orb--b {
+    width: 140px;
+    height: 140px;
+    right: -40px;
+    bottom: -45px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 70%);
+  }
+
+  .yqh_prompt {
+    position: relative;
+    z-index: 2;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--yqh_gold);
+    margin-bottom: 22px;
+  }
+
+  .yqh_result {
+    position: relative;
+    z-index: 2;
+    padding: 26px 18px 24px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px dashed rgba(201, 169, 110, 0.35);
+    will-change: transform, opacity;
+  }
+
+  .yqh_result-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--yqh_dim);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .yqh_result-name {
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+  }
+
+  .yqh_result-desc {
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--yqh_dim);
+  }
+
+  .yqh_result-tag {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--yqh_gold);
+    border: 1px solid rgba(201, 169, 110, 0.45);
+    background: rgba(201, 169, 110, 0.08);
+  }
+  .yqh_result-tag[hidden] { display: none; }
+
+  /* 抽取结果的弹出动画 */
+  @keyframes yqh_pop {
+    0%   { transform: scale(0.82); opacity: 0.15; }
+    60%  { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  .yqh_result--pop {
+    animation: yqh_pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.35);
+  }
+
+  .yqh_status {
+    position: relative;
+    z-index: 2;
+    margin-top: 16px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: rgba(156, 148, 136, 0.85);
+  }
+
+  /* ===== 降级面板 ===== */
+  .yqh_fallback {
+    margin-top: 16px;
+    padding: 18px;
+    border-radius: 14px;
+    text-align: center;
+    background: rgba(139, 38, 53, 0.12);
+    border: 1px solid rgba(201, 169, 110, 0.3);
+  }
+  .yqh_fallback[hidden] { display: none; }
+
+  .yqh_fallback-text {
+    font-size: 13px;
+    color: var(--yqh_dim);
+    margin-bottom: 14px;
+    letter-spacing: 0.04em;
+  }
+
+  .yqh_fallback-btn,
+  .yqh_permission-btn {
+    appearance: none;
+    border: 1px solid var(--yqh_gold);
+    background: var(--yqh_gold);
+    color: #1A1712;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 11px 26px;
+    border-radius: 999px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+  }
+  .yqh_fallback-btn:active,
+  .yqh_permission-btn:active { transform: scale(0.96); opacity: 0.85; }
+
+  .yqh_permission {
+    margin-top: 16px;
+    text-align: center;
+  }
+  .yqh_permission[hidden] { display: none; }
+
+  /* ===== 说明 ===== */
+  .yqh_guide {
+    margin-top: 22px;
+    padding: 20px 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--yqh_line);
+  }
+
+  .yqh_guide-title {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+
+  .yqh_guide p {
+    font-size: 13px;
+    line-height: 1.85;
+    color: var(--yqh_dim);
+    margin-bottom: 12px;
+  }
+  .yqh_guide p:last-of-type { margin-bottom: 0; }
+  .yqh_guide b { color: var(--yqh_text); font-weight: 500; }
+
+  .yqh_guide-list {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .yqh_guide-list li {
+    position: relative;
+    padding-left: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--yqh_dim);
+  }
+  .yqh_guide-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--yqh_gold);
+  }
+
+  .yqh_guide-title--sub { margin-top: 18px; }
+
+  .yqh_note-text {
+    font-size: 12px;
+    line-height: 1.75;
+    color: var(--yqh_dim);
+  }
+
+  .yqh_note {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border-left: 2px solid var(--yqh_gold);
+    background: rgba(201, 169, 110, 0.06);
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* ===== 效果演示视频 ===== */
+  .yqh_demo {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--yqh_line);
+  }
+
+  .yqh_demo-title {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .yqh_demo-video {
+    display: block;
+    width: 100%;
+    max-height: 560px;
+    border-radius: 12px;
+    background: #000;
+    object-fit: contain;
+  }
+
+  .yqh_demo-note {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--yqh_dim);
+  }
+
+  .yqh_foot {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--yqh_line);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: rgba(156, 148, 136, 0.7);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- 倾斜视差背景层：随手机倾斜缓慢位移 -->
+<div class="yqh_bg" aria-hidden="true">
+  <span class="yqh_glow yqh_glow--a yqh_parallax" data-yqh-depth="42"></span>
+  <span class="yqh_glow yqh_glow--b yqh_parallax" data-yqh-depth="68"></span>
+</div>
+
+<div class="yqh_page">
+  <div class="yqh_top">
+    <a class="yqh_back" href="index.html">&larr; 返回首页</a>
+    <span class="yqh_kicker">Shake · Sensor</span>
+  </div>
+
+  <h1 class="yqh_page-title">摇一摇<em>开饭</em></h1>
+  <p class="yqh_page-sub">摇一摇抽菜谱 · 倾斜手机看视差</p>
+
+  <!-- 摇动区域：卡片本身也带 14px 幅度的视差 -->
+  <section class="yqh_shaker yqh_parallax" id="yqh_shaker" data-yqh-depth="14">
+    <span class="yqh_orb yqh_orb--a yqh_parallax" data-yqh-depth="44" aria-hidden="true"></span>
+    <span class="yqh_orb yqh_orb--b yqh_parallax" data-yqh-depth="26" aria-hidden="true"></span>
+
+    <p class="yqh_prompt">摇一摇手机，抽今日菜谱</p>
+
+    <div class="yqh_result" id="yqh_result">
+      <span class="yqh_result-label">今日菜谱</span>
+      <h2 class="yqh_result-name" id="yqh_result-name">等待摇动</h2>
+      <p class="yqh_result-desc" id="yqh_result-desc">握住手机轻轻摇几下，随机为你抽一道菜</p>
+      <span class="yqh_result-tag" id="yqh_result-tag" hidden></span>
+    </div>
+
+    <p class="yqh_status" id="yqh_status">传感器检测中…</p>
+  </section>
+
+  <!-- 降级方案：检测不到 devicemotion 或没有数据时出现 -->
+  <div class="yqh_fallback" id="yqh_fallback" hidden>
+    <p class="yqh_fallback-text">当前设备不支持，请用手机打开</p>
+    <button class="yqh_fallback-btn" id="yqh_fallback-btn" type="button">点我抽一次</button>
+  </div>
+
+  <!-- iOS 13+ 需要用户手势内申请运动传感器权限 -->
+  <div class="yqh_permission" id="yqh_permission" hidden>
+    <button class="yqh_permission-btn" id="yqh_permission-btn" type="button">启用运动传感器</button>
+  </div>
+
+  <!-- 效果演示视频 -->
+  <section class="yqh_demo">
+    <h2 class="yqh_demo-title">效果演示</h2>
+    <video class="yqh_demo-video" id="yqh_demo_video" src="yqh_sensor_demo.mp4"
+      controls playsinline preload="metadata" muted></video>
+    <p class="yqh_demo-note">摇一摇抽菜谱与倾斜视差在真机上的实录，点播放键观看。</p>
+  </section>
+
+  <section class="yqh_guide">
+    <h2 class="yqh_guide-title">实现说明</h2>
+    <ul class="yqh_guide-list">
+      <li>监听 <b>devicemotion</b>，读取 <b>accelerationIncludingGravity</b> 的三轴值，合成加速度 = √(x² + y² + z²)。</li>
+      <li>静止时合成值约等于重力加速度 9.8，因此阈值取 <b>18</b>（约 1.8g），普通晃动不会误触发。</li>
+      <li>触发后进入 <b>1.5 秒冷却</b>，避免一次甩动被采样成多帧而连续抽菜。</li>
+      <li>抽取后随机展示一道菜，并用 <b>0.45s 弹出动画</b>提示结果。</li>
+      <li>iPhone 需用 <b>Safari</b> 打开 <b>HTTPS</b> 页面，点击「启用运动传感器」并在弹窗中选择「允许」；微信 / Chrome 等 iOS 容器不支持摇一摇，会直接给出手动抽取。</li>
+      <li>倾斜视差监听 <b>deviceorientation</b>，以首次读数为基线取 gamma / beta 的偏移量（±12° 即吃满），用 rAF 平滑插值，再按 <b>data-yqh-depth</b> 让背景光晕（42/68px）、卡片（14px）、内部光斑（44/26px）以不同幅度位移。</li>
+    </ul>
+
+    <h2 class="yqh_guide-title yqh_guide-title--sub">为什么必须做降级</h2>
+    <p>摇一摇依赖设备的运动传感器，而它并不是所有环境都可用：桌面浏览器通常没有运动传感器；部分安卓机型或隐私设置下 <b>devicemotion 根本不会派发</b>；iOS 13+ 还要求用户在点击手势中授权，拒绝后同样拿不到数据；即便事件触发，<b>accelerationIncludingGravity 也可能为 null</b>。</p>
+    <p>如果页面只提供摇动这一种输入，用户在这些情况下看到的将是一个永远不会变化的"等待摇动"，等于功能完全失效。抽一道菜才是本页的核心任务，摇动只是其中一种触发方式，所以必须保留一个任何设备都能点的<b>「点我抽一次」</b>按钮作为降级路径，并在界面上如实提示"当前设备不支持，请用手机打开"。</p>
+
+    <div class="yqh_note">
+      <p class="yqh_note-text">同理，iOS 的权限申请必须在用户点击事件内调用，页面加载时自动申请会被直接拒绝，因此单独提供「启用运动传感器」按钮，而不是静默申请。</p>
+    </div>
+
+    <p class="yqh_foot">24002120419 于清华 · MOBILE SENSOR DEMO</p>
+  </section>
+</div>
+
+<script>
+/* 功能：摇一摇抽今日菜谱（devicemotion 合成加速度判定 + 1.5s 冷却 + 不支持时降级按钮） */
+(function () {
+  var yqh_result      = document.getElementById('yqh_result');
+  var yqh_resultName  = document.getElementById('yqh_result-name');
+  var yqh_resultDesc  = document.getElementById('yqh_result-desc');
+  var yqh_resultTag   = document.getElementById('yqh_result-tag');
+  var yqh_status      = document.getElementById('yqh_status');
+  var yqh_fallback    = document.getElementById('yqh_fallback');
+  var yqh_fallbackBtn = document.getElementById('yqh_fallback-btn');
+  var yqh_permission  = document.getElementById('yqh_permission');
+  var yqh_permBtn     = document.getElementById('yqh_permission-btn');
+
+  // ===== 配置 =====
+  var yqh_THRESHOLD   = 18;    // 合成加速度阈值（约 1.8g，含重力基线 9.8）
+  var yqh_COOLDOWN    = 1500;  // 触发冷却 1.5s
+  var yqh_DATA_TIMEOUT = 3000; // 3s 内没有任何有效运动数据则视为不支持
+
+  // ===== 状态 =====
+  var yqh_lastPickAt  = 0;      // 上次触发时间戳
+  var yqh_lastIndex   = -1;     // 上次抽到的菜，避免连续重复
+  var yqh_hasData     = false;  // 是否收到过有效加速度数据
+  var yqh_listening   = false;  // 是否已成功挂上监听
+  var yqh_dataTimer   = null;
+  var yqh_lastMagnitude = 0;
+
+  // ===== 倾斜视差状态 =====
+  var yqh_parallaxEls = document.querySelectorAll('.yqh_parallax');
+  var yqh_MAX_TILT    = 12;      // 相对首次读数，最多取 ±12° 的倾斜量（越小越灵敏）
+  var yqh_baseGamma   = null;    // 首次读数基线（左右）
+  var yqh_baseBeta    = null;    // 首次读数基线（前后）
+  var yqh_tiltX       = 0;       // 目标倾斜量，-1 ~ 1
+  var yqh_tiltY       = 0;
+  var yqh_curX        = 0;       // rAF 平滑后的当前倾斜量
+  var yqh_curY        = 0;
+  var yqh_parallaxRunning = false;
+
+  // ===== 菜谱数据 =====
+  var yqh_dishes = [
+    { name: '麻婆豆腐', tag: '川菜 · 麻辣烫香', desc: '嫩豆腐裹着豆瓣与花椒的红油，一勺下去麻、辣、烫、香、酥、嫩、鲜、活俱全。' },
+    { name: '松鼠鳜鱼', tag: '苏帮 · 酸甜', desc: '鳜鱼改花刀炸至金黄卷起，浇上滚烫茄汁，外脆里嫩，酸甜里藏着江南的秀气。' },
+    { name: '深井烧鹅', tag: '粤菜 · 焦香', desc: '荔枝木明炉慢烤，鹅皮脆得能听见裂声，蘸一点酸梅酱，咸香里透出一线清甜。' },
+    { name: '龙井虾仁', tag: '浙菜 · 清鲜', desc: '明前龙井与河虾仁同炒，茶香清冽，虾仁玉白弹嫩，像把西湖的春天收进盘里。' },
+    { name: '番茄牛腩', tag: '家常 · 浓醇', desc: '牛腩炖到酥软，番茄化成浓稠的汤汁，配一碗白饭，是最稳妥的安慰。' },
+    { name: '冬阴功汤', tag: '泰式 · 酸辣', desc: '香茅、南姜与柠檬叶熬出酸辣汤底，虾与草菇浮沉其间，一口就把胃口叫醒。' }
+  ];
+
+  /**
+   * 更新状态提示文字
+   */
+  function yqh_setStatus(yqh_text) {
+    yqh_status.textContent = yqh_text;
+  }
+
+  /**
+   * 显示降级面板：设备不支持 / 拿不到加速度数据时调用
+   * yqh_reason 用于把具体原因写进状态栏，便于用户判断该怎么处理
+   */
+  function yqh_showFallback(yqh_reason) {
+    yqh_fallback.hidden = false;
+    yqh_permission.hidden = true;
+    yqh_setStatus(yqh_reason || '未检测到运动传感器数据');
+  }
+
+  /**
+   * 抽取并渲染一道菜，同时播放弹出动画
+   * yqh_manual 为 true 表示来自降级按钮的手动抽取
+   */
+  function yqh_pick(yqh_manual) {
+    var yqh_i = Math.floor(Math.random() * yqh_dishes.length);
+    // 避免和上一次抽到同一道菜（只有 1 道菜时不处理）
+    if (yqh_dishes.length > 1 && yqh_i === yqh_lastIndex) {
+      yqh_i = (yqh_i + 1) % yqh_dishes.length;
+    }
+    yqh_lastIndex = yqh_i;
+
+    var yqh_dish = yqh_dishes[yqh_i];
+    yqh_resultName.textContent = yqh_dish.name;
+    yqh_resultDesc.textContent = yqh_dish.desc;
+    yqh_resultTag.textContent = yqh_dish.tag;
+    yqh_resultTag.hidden = false;
+
+    // 重启 CSS 动画：先移除类并强制回流，再重新添加
+    yqh_result.classList.remove('yqh_result--pop');
+    void yqh_result.offsetWidth;
+    yqh_result.classList.add('yqh_result--pop');
+
+    yqh_setStatus(yqh_manual ? '已手动抽取一道菜' : '摇动成功，已为你抽到一道菜');
+  }
+
+  /**
+   * 计算三轴合成加速度
+   */
+  function yqh_magnitude(yqh_x, yqh_y, yqh_z) {
+    return Math.sqrt(yqh_x * yqh_x + yqh_y * yqh_y + yqh_z * yqh_z);
+  }
+
+  /**
+   * devicemotion 处理：
+   * 1. 过滤无效数据（accelerationIncludingGravity 为 null 或三轴全为 null）
+   * 2. 合成加速度超过阈值且不在 1.5s 冷却期内时触发抽取
+   */
+  function yqh_onMotion(e) {
+    var yqh_acc = e.accelerationIncludingGravity;
+    if (!yqh_acc) return;
+
+    var yqh_x = typeof yqh_acc.x === 'number' ? yqh_acc.x : null;
+    var yqh_y = typeof yqh_acc.y === 'number' ? yqh_acc.y : null;
+    var yqh_z = typeof yqh_acc.z === 'number' ? yqh_acc.z : null;
+    if (yqh_x === null && yqh_y === null && yqh_z === null) return; // 没有可用数据
+
+    if (!yqh_hasData) {
+      yqh_hasData = true;
+      clearTimeout(yqh_dataTimer);
+      yqh_fallback.hidden = true;
+      yqh_setStatus('传感器已就绪，摇一摇试试');
+    }
+
+    var yqh_mag = yqh_magnitude(yqh_x || 0, yqh_y || 0, yqh_z || 0);
+    yqh_lastMagnitude = yqh_mag;
+    if (yqh_mag < yqh_THRESHOLD) return;
+
+    // 冷却期内只记录，不再触发
+    var yqh_now = Date.now();
+    if (yqh_now - yqh_lastPickAt < yqh_COOLDOWN) return;
+
+    yqh_lastPickAt = yqh_now;
+    yqh_pick(false);
+  }
+
+  /**
+   * 把倾斜角差夹紧到 [-max, max]
+   */
+  function yqh_clampTilt(yqh_v, yqh_max) {
+    return Math.min(yqh_max, Math.max(-yqh_max, yqh_v));
+  }
+
+  /**
+   * deviceorientation：用相对首帧的 gamma（左右）/ beta（前后）偏移驱动视差
+   * 直接使用绝对角度会受握持姿势影响，因此先记录基线
+   */
+  function yqh_onOrientation(e) {
+    if (typeof e.gamma !== 'number' || typeof e.beta !== 'number') return;
+
+    if (yqh_baseGamma === null) {
+      yqh_baseGamma = e.gamma;
+      yqh_baseBeta = e.beta;
+      yqh_startParallax();
+      return; // 第一帧只当作基线，不产生位移
+    }
+
+    yqh_tiltX = yqh_clampTilt(e.gamma - yqh_baseGamma, yqh_MAX_TILT) / yqh_MAX_TILT;
+    yqh_tiltY = yqh_clampTilt(e.beta - yqh_baseBeta, yqh_MAX_TILT) / yqh_MAX_TILT;
+  }
+
+  /**
+   * 启动视差渲染循环（只在收到第一帧方向数据后启动）
+   */
+  function yqh_startParallax() {
+    if (yqh_parallaxRunning) return;
+    yqh_parallaxRunning = true;
+    requestAnimationFrame(yqh_parallaxFrame);
+  }
+
+  /**
+   * 每帧做一次线性插值，让位移跟随倾斜但不生硬；
+   * 各元素按 data-yqh-depth 的像素幅度反向位移，形成层次不同的视差
+   */
+  function yqh_parallaxFrame() {
+    yqh_curX += (yqh_tiltX - yqh_curX) * 0.18;
+    yqh_curY += (yqh_tiltY - yqh_curY) * 0.18;
+
+    for (var yqh_i = 0; yqh_i < yqh_parallaxEls.length; yqh_i++) {
+      var yqh_el = yqh_parallaxEls[yqh_i];
+      var yqh_depth = parseFloat(yqh_el.getAttribute('data-yqh-depth')) || 10;
+      yqh_el.style.transform =
+        'translate3d(' + (-yqh_curX * yqh_depth).toFixed(2) + 'px, ' +
+        (-yqh_curY * yqh_depth).toFixed(2) + 'px, 0)';
+    }
+
+    requestAnimationFrame(yqh_parallaxFrame);
+  }
+
+  /**
+   * 挂上 devicemotion / deviceorientation 监听，并启动"无数据"超时判定
+   */
+  function yqh_attachListener() {
+    if (yqh_listening) return;
+    yqh_listening = true;
+    window.addEventListener('devicemotion', yqh_onMotion);
+    window.addEventListener('deviceorientation', yqh_onOrientation); // 倾斜视差
+
+    yqh_dataTimer = setTimeout(function () {
+      if (!yqh_hasData) yqh_showFallback(); // 3s 内没有有效数据 → 降级
+    }, yqh_DATA_TIMEOUT);
+  }
+
+  /**
+   * 是否 iOS / iPadOS 设备（含 iPad 桌面版 UA 的触屏判断）
+   */
+  function yqh_isIOS() {
+    var yqh_ua = navigator.userAgent;
+    if (/iPad|iPhone|iPod/.test(yqh_ua)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  /**
+   * 是否 iOS 上的 Safari（只有它支持 requestPermission 并能派发 devicemotion）
+   * 微信、Chrome、Firefox 等 iOS 容器都基于 WebKit，但没有该权限接口
+   */
+  function yqh_isIOSSafari() {
+    var yqh_ua = navigator.userAgent;
+    return yqh_isIOS() && /Safari/.test(yqh_ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|MicroMessenger)/.test(yqh_ua);
+  }
+
+  /**
+   * 初始化传感器：
+   * - 没有 DeviceMotionEvent → 直接降级
+   * - iOS 13+ Safari 需要用户手势内申请权限，且必须 HTTPS → 显示授权按钮
+   * - iPhone 上的非 Safari 容器拿不到运动数据 → 直接降级并提示用 Safari
+   * - 其余情况直接监听
+   */
+  function yqh_initSensor() {
+    // iPhone 上运动传感器只在安全上下文（HTTPS / localhost）里可用，http 局域网地址会直接失败
+    if (yqh_isIOS() && !window.isSecureContext) {
+      yqh_showFallback('iPhone 需要 HTTPS 页面才能授权传感器，可先点下方按钮抽取');
+      return;
+    }
+
+    if (typeof window.DeviceMotionEvent === 'undefined') {
+      yqh_showFallback();
+      return;
+    }
+
+    if (typeof window.DeviceMotionEvent.requestPermission === 'function') {
+      yqh_permission.hidden = false;
+      yqh_setStatus(yqh_isIOS() ? 'iPhone：请点上方按钮，在弹窗中选择「允许」' : '需要先授权运动传感器');
+
+      // 5s 内既没授权也没数据，也露出手动抽取入口，同时保留授权按钮
+      yqh_dataTimer = setTimeout(function () {
+        if (!yqh_hasData) {
+          yqh_fallback.hidden = false;
+          yqh_setStatus('未获得授权，也可直接点下方按钮抽取');
+        }
+      }, 5000);
+      return;
+    }
+
+    // iOS 微信 / Chrome 等容器既没有 requestPermission，也不会派发 devicemotion
+    if (yqh_isIOS() && !yqh_isIOSSafari()) {
+      yqh_showFallback('iPhone 请用 Safari 打开，当前浏览器不支持摇一摇');
+      return;
+    }
+
+    yqh_attachListener();
+  }
+
+  /**
+   * iOS 13+ 的方向权限申请（视差用），不支持该接口时视为已授权
+   */
+  function yqh_requestOrientationPermission() {
+    if (typeof window.DeviceOrientationEvent !== 'undefined' &&
+        typeof window.DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        return window.DeviceOrientationEvent.requestPermission().catch(function () {
+          return 'denied';
+        });
+      } catch (yqh_err) {
+        return Promise.resolve('denied');
+      }
+    }
+    return Promise.resolve('granted');
+  }
+
+  /**
+   * iOS 13+ 权限申请：必须在点击事件中调用
+   * 运动与方向两个权限一起申请，方向权限被拒只影响视差，不影响摇一摇
+   */
+  function yqh_requestPermission() {
+    clearTimeout(yqh_dataTimer);
+    var yqh_motionAsk = window.DeviceMotionEvent.requestPermission();
+    var yqh_orientationAsk = yqh_requestOrientationPermission();
+
+    Promise.all([yqh_motionAsk, yqh_orientationAsk]).then(function (yqh_results) {
+      if (yqh_results[0] === 'granted') {
+        yqh_permission.hidden = true;
+        yqh_setStatus('传感器检测中…');
+        yqh_attachListener();
+      } else {
+        yqh_showFallback('未获得传感器授权，可直接点下方按钮抽取');
+      }
+    }).catch(function () {
+      yqh_showFallback('授权失败：请确认用 Safari 打开且页面为 HTTPS');
+    });
+  }
+
+  // ===== 事件绑定 =====
+  yqh_fallbackBtn.addEventListener('click', function () {
+    yqh_pick(true); // 降级按钮：任何设备都能抽一次
+  });
+  yqh_permBtn.addEventListener('click', yqh_requestPermission);
+
+  yqh_initSensor();
+})();
+</script>
+
+</body>
+</html>

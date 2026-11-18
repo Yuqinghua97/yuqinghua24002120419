@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>掌上食单 · 手势滑动</title>
+<!--
+  文件名：mobile-gesture.html
+  作者：24002120419 于清华
+  建立时间：2026-11-18
+  使用大模型：DeepSeek-V4.1-Flash
+  功能名称：移动端美食卡片手势滑动切换（touchstart / touchend + 40px 阈值 + 300ms 冷却）
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --yqh_bg:     #14120F;
+    --yqh_bg-alt: #1E1B17;
+    --yqh_text:   #F3EEE6;
+    --yqh_dim:    #9C9488;
+    --yqh_gold:   #C9A96E;
+    --yqh_line:   rgba(201, 169, 110, 0.22);
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(120% 60% at 50% 0%, #221D17 0%, #14120F 55%, #0E0C0A 100%);
+    color: var(--yqh_text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  .yqh_page {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 18px 40px;
+  }
+
+  /* ===== 顶部 ===== */
+  .yqh_top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 26px;
+  }
+
+  .yqh_back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--yqh_gold);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    padding: 6px 0;
+  }
+  .yqh_back:active { opacity: 0.6; }
+
+  .yqh_kicker {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: var(--yqh_dim);
+    text-transform: uppercase;
+  }
+
+  .yqh_page-title {
+    font-size: 30px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .yqh_page-title em {
+    font-style: normal;
+    color: var(--yqh_gold);
+  }
+
+  .yqh_page-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--yqh_dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 20px;
+  }
+
+  /* ===== 卡片舞台 ===== */
+  .yqh_stage {
+    position: relative;
+    height: clamp(360px, 60vh, 500px);
+    border-radius: 26px;
+    overflow: hidden;
+    background: #1A1714;
+    border: 1px solid var(--yqh_line);
+    box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.85);
+    /* 只接管横向手势，纵向滑动仍可滚动页面 */
+    touch-action: pan-y;
+  }
+
+  .yqh_track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    will-change: transform;
+  }
+
+  .yqh_card {
+    position: relative;
+    flex: 0 0 100%;
+    height: 100%;
+    padding: 26px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* 卡片装饰光斑 */
+  .yqh_card::before {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    right: -90px;
+    top: -110px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 68%);
+  }
+  .yqh_card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.46) 100%);
+  }
+
+  .yqh_card-top,
+  .yqh_card-info { position: relative; z-index: 1; }
+
+  .yqh_card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .yqh_card-index {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .yqh_card-cuisine {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    padding: 5px 10px;
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(6px);
+  }
+
+  .yqh_card-name {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .yqh_card-desc {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.86);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .yqh_card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .yqh_card-tags span {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 5px 10px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  /* ===== 四道菜的渐变背景 ===== */
+  .yqh_card--mapo {
+    background: linear-gradient(155deg, #6E1414 0%, #B7352A 52%, #E8792B 100%);
+  }
+  .yqh_card--squirrel {
+    background: linear-gradient(155deg, #6B4310 0%, #C1852C 55%, #F0C86A 100%);
+  }
+  .yqh_card--roast {
+    background: linear-gradient(155deg, #2E1610 0%, #7A3520 50%, #B5563A 100%);
+  }
+  .yqh_card--shrimp {
+    background: linear-gradient(155deg, #0E3F38 0%, #2C7A5B 55%, #8FC79A 100%);
+  }
+
+  /* ===== 手势说明（用于验证纵向滚动） ===== */
+  .yqh_guide {
+    margin-top: 26px;
+    padding: 20px 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--yqh_line);
+  }
+
+  .yqh_guide-title {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+
+  .yqh_guide-list {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+  }
+  .yqh_guide-list li {
+    position: relative;
+    padding-left: 16px;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--yqh_dim);
+  }
+  .yqh_guide-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--yqh_gold);
+  }
+  .yqh_guide-list b { color: var(--yqh_text); font-weight: 500; }
+
+  .yqh_foot {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--yqh_line);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: rgba(156, 148, 136, 0.7);
+    text-align: center;
+  }
+
+  /* ===== 边界提示 ===== */
+  .yqh_hint {
+    position: fixed;
+    left: 50%;
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 8px);
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--yqh_text);
+    background: rgba(20, 18, 15, 0.94);
+    border: 1px solid rgba(201, 169, 110, 0.5);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 20;
+    white-space: nowrap;
+  }
+  .yqh_hint--show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* ===== 底部计数条 ===== */
+  .yqh_bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px calc(16px + env(safe-area-inset-bottom));
+    background: rgba(18, 16, 13, 0.92);
+    border-top: 1px solid var(--yqh_line);
+    backdrop-filter: blur(14px);
+  }
+
+  .yqh_bar-label {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: var(--yqh_dim);
+    text-transform: uppercase;
+  }
+
+  .yqh_counter {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--yqh_text);
+  }
+  .yqh_counter b {
+    color: var(--yqh_gold);
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="yqh_page">
+  <div class="yqh_top">
+    <a class="yqh_back" href="index.html">&larr; 返回首页</a>
+    <span class="yqh_kicker">Swipe · Gourmet</span>
+  </div>
+
+  <h1 class="yqh_page-title">掌上<em>食单</em></h1>
+  <p class="yqh_page-sub">左右滑动，换一道菜</p>
+
+  <!-- 卡片舞台：touch-action: pan-y，横向接管、纵向交给页面 -->
+  <section class="yqh_stage" id="yqh_stage">
+    <div class="yqh_track" id="yqh_track">
+
+      <article class="yqh_card yqh_card--mapo">
+        <div class="yqh_card-top">
+          <span class="yqh_card-index">01 / 04</span>
+          <span class="yqh_card-cuisine">川菜 · 麻</span>
+        </div>
+        <div class="yqh_card-info">
+          <h2 class="yqh_card-name">麻婆豆腐</h2>
+          <p class="yqh_card-desc">嫩豆腐在豆瓣与花椒的红油里翻滚，一勺入口，麻、辣、烫、香、酥、嫩、鲜、活八字诀俱全，最宜配一碗白饭。</p>
+          <div class="yqh_card-tags"><span>嫩豆腐</span><span>汉源花椒</span><span>郫县豆瓣</span></div>
+        </div>
+      </article>
+
+      <article class="yqh_card yqh_card--squirrel">
+        <div class="yqh_card-top">
+          <span class="yqh_card-index">02 / 04</span>
+          <span class="yqh_card-cuisine">苏帮 · 甜</span>
+        </div>
+        <div class="yqh_card-info">
+          <h2 class="yqh_card-name">松鼠鳜鱼</h2>
+          <p class="yqh_card-desc">鳜鱼去骨改花刀，炸至金黄卷起如松鼠尾，浇上滚烫的茄汁，"吱吱"作响，外脆里嫩，酸甜里藏着江南的秀气。</p>
+          <div class="yqh_card-tags"><span>鳜鱼</span><span>茄汁</span><span>松子</span></div>
+        </div>
+      </article>
+
+      <article class="yqh_card yqh_card--roast">
+        <div class="yqh_card-top">
+          <span class="yqh_card-index">03 / 04</span>
+          <span class="yqh_card-cuisine">粤菜 · 香</span>
+        </div>
+        <div class="yqh_card-info">
+          <h2 class="yqh_card-name">深井烧鹅</h2>
+          <p class="yqh_card-desc">荔枝木明炉慢烤，鹅皮脆得能听见裂声，皮下油脂化作琥珀色的光，蘸一点酸梅酱，咸香里透出一线清甜。</p>
+          <div class="yqh_card-tags"><span>黑鬃鹅</span><span>荔枝木</span><span>酸梅酱</span></div>
+        </div>
+      </article>
+
+      <article class="yqh_card yqh_card--shrimp">
+        <div class="yqh_card-top">
+          <span class="yqh_card-index">04 / 04</span>
+          <span class="yqh_card-cuisine">浙菜 · 鲜</span>
+        </div>
+        <div class="yqh_card-info">
+          <h2 class="yqh_card-name">龙井虾仁</h2>
+          <p class="yqh_card-desc">明前龙井新茶与河虾仁同炒，茶香清冽，虾仁玉白弹嫩，一箸下去仿佛把整个西湖的春天都收进了盘里。</p>
+          <div class="yqh_card-tags"><span>河虾仁</span><span>明前龙井</span><span>蛋清</span></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="yqh_guide">
+    <h2 class="yqh_guide-title">手势说明</h2>
+    <ul class="yqh_guide-list">
+      <li><b>左滑</b>切到下一道菜，<b>右滑</b>切到上一道菜，横向位移需超过 <b>40px</b> 才判定为滑动。</li>
+      <li>已经在第一张时继续右滑、或最后一张时继续左滑，会提示"已经是第一张 / 最后一张"。</li>
+      <li>切换使用 <b>0.3s</b> 过渡动画；连续快速滑动时有 <b>300ms</b> 冷却，不会一次跳过两张。</li>
+      <li>卡片容器设置了 <b>touch-action: pan-y</b>，在卡片上上下滑动依然可以滚动页面。</li>
+      <li>位移取 <b>changedTouches[0]</b> 的横坐标差值；当纵向位移大于横向时，视为滚动手势，不触发切换。</li>
+    </ul>
+    <p class="yqh_foot">24002120419 于清华 · MOBILE GESTURE DEMO</p>
+  </section>
+</div>
+
+<div class="yqh_hint" id="yqh_hint"></div>
+
+<div class="yqh_bar">
+  <span class="yqh_bar-label">Gourmet Card</span>
+  <span class="yqh_counter" id="yqh_counter">第 <b>1</b>/4 张</span>
+</div>
+
+<script>
+/* 功能：移动端美食卡片手势滑动切换（touchstart / touchend + 40px 阈值 + 300ms 冷却） */
+(function () {
+  var yqh_stage      = document.getElementById('yqh_stage');
+  var yqh_track      = document.getElementById('yqh_track');
+  var yqh_counter    = document.getElementById('yqh_counter');
+  var yqh_hint       = document.getElementById('yqh_hint');
+
+  var yqh_total      = yqh_track.children.length;
+  var yqh_index      = 0;
+  var yqh_startX     = 0;
+  var yqh_startY     = 0;
+  var yqh_dragging   = false;
+  var yqh_locked     = false;
+  var yqh_hintTimer  = null;
+  var yqh_THRESHOLD  = 40;   // 横向滑动阈值 40px
+  var yqh_COOLDOWN   = 300;  // 冷却时间 300ms，防止一次连跳两张
+
+  /**
+   * 渲染：按当前索引平移轨道，并刷新底部"第 n/4 张"
+   */
+  function yqh_render() {
+    yqh_track.style.transform = 'translateX(' + (-yqh_index * 100) + '%)';
+    yqh_counter.innerHTML = '第 <b>' + (yqh_index + 1) + '</b>/' + yqh_total + ' 张';
+  }
+
+  /**
+   * 边界提示：显示 1.2s 的轻提示文字
+   */
+  function yqh_toast(yqh_msg) {
+    yqh_hint.textContent = yqh_msg;
+    yqh_hint.classList.add('yqh_hint--show');
+    clearTimeout(yqh_hintTimer);
+    yqh_hintTimer = setTimeout(function () {
+      yqh_hint.classList.remove('yqh_hint--show');
+    }, 1200);
+  }
+
+  /**
+   * 切换卡片：dir 为 1 下一张 / -1 上一张；处理边界与 300ms 冷却
+   */
+  function yqh_go(yqh_dir) {
+    if (yqh_locked) {           // 冷却期内忽略，并让卡片回位
+      yqh_render();
+      return;
+    }
+
+    var yqh_next = yqh_index + yqh_dir;
+
+    if (yqh_next < 0) {         // 已经是第一张
+      yqh_render();
+      yqh_toast('已经是第一张');
+      return;
+    }
+    if (yqh_next >= yqh_total) { // 已经是最后一张
+      yqh_render();
+      yqh_toast('已经是最后一张');
+      return;
+    }
+
+    yqh_locked = true;
+    yqh_index = yqh_next;
+    yqh_render();
+
+    setTimeout(function () {
+      yqh_locked = false;
+    }, yqh_COOLDOWN);
+  }
+
+  /**
+   * 跟手位移：拖动过程中让轨道实时跟随手指，边界处加阻尼
+   */
+  function yqh_follow(yqh_offset) {
+    var yqh_edge = (yqh_index === 0 && yqh_offset > 0) ||
+                   (yqh_index === yqh_total - 1 && yqh_offset < 0);
+    if (yqh_edge) yqh_offset = yqh_offset * 0.3;
+
+    yqh_track.style.transform =
+      'translateX(calc(' + (-yqh_index * 100) + '% + ' + yqh_offset.toFixed(1) + 'px))';
+  }
+
+  /**
+   * touchstart：记录起点，并暂时关闭过渡以便跟手
+   */
+  function yqh_onTouchStart(e) {
+    var yqh_touch = e.touches[0];
+    yqh_startX = yqh_touch.clientX;
+    yqh_startY = yqh_touch.clientY;
+    yqh_dragging = false;
+    yqh_track.style.transition = 'none';
+  }
+
+  /**
+   * touchmove：判定为横向手势后实时跟手；纵向手势不处理，交给页面滚动
+   */
+  function yqh_onTouchMove(e) {
+    if (!e.touches.length) return;
+
+    var yqh_touch = e.touches[0];
+    var yqh_dxNow = yqh_touch.clientX - yqh_startX;
+    var yqh_dyNow = yqh_touch.clientY - yqh_startY;
+
+    if (!yqh_dragging) {
+      if (Math.abs(yqh_dxNow) < 8) return;                      // 位移太小，先不判定
+      if (Math.abs(yqh_dxNow) <= Math.abs(yqh_dyNow)) return;   // 纵向为主，交给页面滚动
+      yqh_dragging = true;
+    }
+
+    yqh_follow(yqh_dxNow);
+  }
+
+  /**
+   * touchend：用 changedTouches[0] 计算横向总位移，超过 40px 触发切换
+   */
+  function yqh_onTouchEnd(e) {
+    var yqh_touch = e.changedTouches[0];
+    var yqh_deltaX = yqh_touch.clientX - yqh_startX;
+    var yqh_deltaY = yqh_touch.clientY - yqh_startY;
+
+    yqh_track.style.transition = '';   // 恢复 0.3s 过渡
+    var yqh_wasDragging = yqh_dragging;
+    yqh_dragging = false;
+
+    if (!yqh_wasDragging) return;      // 点击或纵向滚动，不改卡片
+
+    if (Math.abs(yqh_deltaY) > Math.abs(yqh_deltaX)) {
+      yqh_render();
+      return;
+    }
+
+    if (yqh_deltaX <= -yqh_THRESHOLD) {
+      yqh_go(1);                       // 左滑 → 下一张
+    } else if (yqh_deltaX >= yqh_THRESHOLD) {
+      yqh_go(-1);                      // 右滑 → 上一张
+    } else {
+      yqh_render();                    // 位移不足，回弹
+    }
+  }
+
+  yqh_stage.addEventListener('touchstart', yqh_onTouchStart, { passive: true });
+  yqh_stage.addEventListener('touchmove', yqh_onTouchMove, { passive: true });
+  yqh_stage.addEventListener('touchend', yqh_onTouchEnd, { passive: true });
+
+  yqh_render();
+})();
+</script>
+
+</body>
+</html>

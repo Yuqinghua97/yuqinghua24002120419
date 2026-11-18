@@ -113,6 +113,8 @@
     position: relative;
   }
   .yqh_card:last-child { border-right: none; }
+  .yqh_grid .yqh_card:nth-child(2n) { border-right: none; }
+  .yqh_grid .yqh_card:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .yqh_card:hover { background: var(--yqh_bg-alt); }
 
   .yqh_card-num {
@@ -195,6 +197,9 @@
     <a href="iconfont-1.html">Font Awesome</a>
     <a href="iconfont-2.html">Lucide</a>
     <a href="000yuqinghua/webp-web-project-by-yu-qinghua/webp-web-project-by-yu-qinghua/webp-web-project-by-yu-qinghua/swiper-task.html">Swiper</a>
+    <a href="mobile-gesture.html">Gesture</a>
+    <a href="mobile-zoom.html">Zoom</a>
+    <a href="mobile-sensor.html">Sensor</a>
   </div>
 </nav>
 
@@ -227,6 +232,30 @@
     <div class="yqh_card-tag">轮播组件 · 大国重器光影展</div>
     <p>四个"沉睡"的轮播等待唤醒：最小轮播、圆点箭头、自动翻页、六种切换效果——补全 JS 初始化代码，让大国重器的光影重新转动。</p>
     <span class="yqh_card-cta">进入任务</span>
+  </a>
+
+  <a class="yqh_card" href="mobile-gesture.html">
+    <div class="yqh_card-num">04 / MOBILE GESTURE</div>
+    <h2>掌上食单</h2>
+    <div class="yqh_card-tag">触摸手势 · Touch 事件</div>
+    <p>四道菜，一个卡片舞台。监听 touchstart 与 touchend，以 40px 为阈值左右滑动切换，边界提示、0.3s 过渡与 300ms 冷却都写在一处。</p>
+    <span class="yqh_card-cta">开始滑动</span>
+  </a>
+
+  <a class="yqh_card" href="mobile-zoom.html">
+    <div class="yqh_card-num">05 / PINCH ZOOM</div>
+    <h2>图集细看</h2>
+    <div class="yqh_card-tag">双指缩放 · Transform</div>
+    <p>一张大图，容器裁切、手势接管。双指按距离比例在 1～4 倍间缩放，以两指中点为基准；单指拖动、双击在 1x 与 2x 之间来回。</p>
+    <span class="yqh_card-cta">进入看图</span>
+  </a>
+
+  <a class="yqh_card" href="mobile-sensor.html">
+    <div class="yqh_card-num">06 / SHAKE SENSOR</div>
+    <h2>摇一摇开饭</h2>
+    <div class="yqh_card-tag">运动传感器 · 降级方案</div>
+    <p>用 devicemotion 的合成加速度判断摇动，阈值 18、冷却 1.5 秒；拿不到传感器数据时，留一个「点我抽一次」按钮，让任何设备都能抽到今天的菜。</p>
+    <span class="yqh_card-cta">摇一份菜谱</span>
   </a>
 </section>
 
