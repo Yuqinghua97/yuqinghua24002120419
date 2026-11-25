@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 应用测试 · 四项能力验证</title>
+<!--
+  文件名：ai-apps.html
+  作者：24002120419 于清华
+  建立时间：2026-11-25
+  使用大模型：DeepSeek-V4.1-Flash
+  功能名称：AI 应用测试结果展示（AI 对话 · 知识库问答 · 图像识别 · 语音识别）
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --yqh_bg:      #14120F;
+    --yqh_bg-alt:  #1B1815;
+    --yqh_text:    #F3EEE6;
+    --yqh_dim:     #9C9488;
+    --yqh_gold:    #C9A96E;
+    --yqh_line:    rgba(201, 169, 110, 0.22);
+    --yqh-red:     #8B2635;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(120% 60% at 50% 0%, #221D17 0%, #14120F 55%, #0E0C0A 100%);
+    color: var(--yqh_text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    padding-bottom: 60px;
+  }
+
+  .yqh_page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .yqh_top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--yqh_line);
+  }
+  .yqh_back {
+    color: var(--yqh_gold);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    padding: 6px 0;
+  }
+  .yqh_back:active { opacity: 0.6; }
+  .yqh_kicker {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    color: var(--yqh_dim);
+    text-transform: uppercase;
+  }
+
+  /* ===== Hero ===== */
+  .yqh_hero {
+    margin-bottom: 40px;
+  }
+  .yqh_hero-num {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--yqh_gold);
+    margin-bottom: 18px;
+    font-weight: 500;
+  }
+  .yqh_hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+  }
+  .yqh_hero h1 em { font-style: normal; color: var(--yqh_gold); font-weight: 400; }
+  .yqh_hero-sub {
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--yqh_dim);
+    max-width: 560px;
+    line-height: 1.8;
+  }
+
+  /* ===== 四项能力总览 ===== */
+  .yqh_overview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 44px;
+  }
+  .yqh_overview-item {
+    padding: 18px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--yqh_line);
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
+  }
+  .yqh_overview-num {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .yqh_overview-name {
+    font-size: 14px;
+    color: var(--yqh_text);
+    font-weight: 500;
+  }
+  .yqh_overview-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  /* ===== 测试结果卡片 ===== */
+  .yqh_case {
+    margin-bottom: 48px;
+    padding: 28px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--yqh_line);
+    box-shadow: 0 20px 40px -30px rgba(0, 0, 0, 0.8);
+  }
+
+  .yqh_case-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .yqh_case-title-block { flex: 1; min-width: 240px; }
+  .yqh_case-num {
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .yqh_case-title {
+    font-size: 26px;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+  .yqh_case-title em {
+    font-style: normal;
+    color: var(--yqh_gold);
+    font-weight: 400;
+  }
+
+  .yqh_case-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .yqh_tag {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--yqh_line);
+    color: var(--yqh_dim);
+    background: rgba(201, 169, 110, 0.06);
+  }
+  .yqh-tag--method { border-color: rgba(139, 38, 53, 0.5); color: #D08090; background: rgba(139, 38, 53, 0.1); }
+
+  /* ===== 接口信息 ===== */
+  .yqh_api {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: #0C0B0A;
+    border: 1px solid rgba(74, 70, 64, 0.6);
+    font-family: "JetBrains Mono", "Consolas", monospace;
+    font-size: 12px;
+    margin-bottom: 18px;
+  }
+  .yqh_api-method {
+    color: #D08090;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .yqh_api-path {
+    color: var(--yqh_text);
+    flex: 1;
+  }
+  .yqh_api-note {
+    color: var(--yqh_dim);
+    font-size: 11px;
+  }
+
+  /* ===== 截图展示 ===== */
+  .yqh_shot-wrap {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(74, 70, 64, 0.5);
+    background: #0C0B0A;
+    margin-bottom: 20px;
+  }
+  .yqh_shot {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* ===== 示例数据 ===== */
+  .yqh_demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .yqh_demo-block {
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px dashed rgba(201, 169, 110, 0.3);
+  }
+  .yqh_demo-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--yqh_gold);
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .yqh_demo-content {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--yqh_text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .yqh_demo-content--dim { color: var(--yqh_dim); }
+
+  /* ===== 页脚 ===== */
+  .yqh_foot {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--yqh_line);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: rgba(156, 148, 136, 0.7);
+    text-align: center;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 720px) {
+    .yqh_overview { grid-template-columns: repeat(2, 1fr); }
+    .yqh_demo { grid-template-columns: 1fr; }
+    .yqh_case { padding: 22px 18px; }
+  }
+  @media (max-width: 420px) {
+    .yqh_overview { grid-template-columns: 1fr 1fr; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="yqh_page">
+
+  <!-- 顶部 -->
+  <div class="yqh_top">
+    <a class="yqh_back" href="index.html">&larr; 返回首页</a>
+    <span class="yqh_kicker">AI · FOUR-CAPABILITY</span>
+  </div>
+
+  <!-- Hero -->
+  <section class="yqh_hero">
+    <div class="yqh_hero-num">07 / AI APPLICATIONS TEST</div>
+    <h1>四项 AI 能力 <em>实测</em></h1>
+    <p class="yqh_hero-sub">
+      基于本地大模型后端（硅基流动 + Qwen 系列）验证 AI 对话、RAG 知识库问答、图像识别、语音识别四项能力的实际表现。以下是每项功能的真实测试截图、接口信息与示例输入输出。
+    </p>
+  </section>
+
+  <!-- 四项能力总览 -->
+  <section class="yqh_overview">
+    <div class="yqh_overview-item">
+      <span class="yqh_overview-icon">💬</span>
+      <div class="yqh_overview-num">01</div>
+      <div class="yqh_overview-name">AI 对话</div>
+    </div>
+    <div class="yqh_overview-item">
+      <span class="yqh_overview-icon">📚</span>
+      <div class="yqh_overview-num">02</div>
+      <div class="yqh_overview-name">知识库问答</div>
+    </div>
+    <div class="yqh_overview-item">
+      <span class="yqh_overview-icon">🖼️</span>
+      <div class="yqh_overview-num">03</div>
+      <div class="yqh_overview-name">图像识别</div>
+    </div>
+    <div class="yqh_overview-item">
+      <span class="yqh_overview-icon">🎙️</span>
+      <div class="yqh_overview-num">04</div>
+      <div class="yqh_overview-name">语音识别</div>
+    </div>
+  </section>
+
+  <!-- ========== 测试 01 · AI 对话 ========== -->
+  <section class="yqh_case">
+    <div class="yqh_case-head">
+      <div class="yqh_case-title-block">
+        <div class="yqh_case-num">01 / CHAT</div>
+        <h2 class="yqh_case-title">AI <em>对话</em></h2>
+      </div>
+      <div class="yqh_case-tags">
+        <span class="yqh_tag yqh-tag--method">POST</span>
+        <span class="yqh_tag">Qwen2.5-7B-Instruct</span>
+        <span class="yqh_tag">硅基流动</span>
+      </div>
+    </div>
+
+    <div class="yqh_api">
+      <span class="yqh_api-method">POST</span>
+      <span class="yqh_api-path">/api/ai/chat</span>
+      <span class="yqh_api-note">服务端注入 system 提示词 · 可切换服务商</span>
+    </div>
+
+    <div class="yqh_shot-wrap">
+      <img class="yqh_shot" src="ai-imgs/yqh_ai_chat.png" alt="AI 对话测试截图">
+    </div>
+
+    <div class="yqh_demo">
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">System 提示词</div>
+        <div class="yqh_demo-content yqh_demo-content--dim">你好,我是中华美食街的客服"小味"。可以咨询营业时间、招牌菜、配送范围三类问题;其他问题会礼貌引导您留言。</div>
+      </div>
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">示例交互</div>
+        <div class="yqh_demo-content">用户: 你们几点营业
+AI: 我们每天 10:00 开始营业,直到 22:00,21:30 停止接单。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 测试 02 · 知识库问答 ========== -->
+  <section class="yqh_case">
+    <div class="yqh_case-head">
+      <div class="yqh_case-title-block">
+        <div class="yqh_case-num">02 / RAG · KNOWLEDGE BASE</div>
+        <h2 class="yqh_case-title">知识库 <em>问答</em></h2>
+      </div>
+      <div class="yqh_case-tags">
+        <span class="yqh_tag yqh-tag--method">POST</span>
+        <span class="yqh_tag">向量检索 + 大模型</span>
+        <span class="yqh_tag">上传解析切片入库</span>
+      </div>
+    </div>
+
+    <div class="yqh_api">
+      <span class="yqh_api-method">POST</span>
+      <span class="yqh_api-path">/api/kb/upload &nbsp;·&nbsp; GET /api/kb/files &nbsp;·&nbsp; POST /api/kb/chat</span>
+      <span class="yqh_api-note">form-data: file · 单文件 ≤ 20MB</span>
+    </div>
+
+    <div class="yqh_shot-wrap">
+      <img class="yqh_shot" src="ai-imgs/yqh_ai_kb.png" alt="知识库问答测试截图">
+    </div>
+
+    <div class="yqh_demo">
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">已上传文件</div>
+        <div class="yqh_demo-content">· 中华美食街招牌菜与配送说明.pptx (37.4 KB · 8 段)
+· 中华美食街商家手册.docx (38.2 KB · 6 段)</div>
+      </div>
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">RAG 流程</div>
+        <div class="yqh_demo-content yqh_demo-content--dim">1. 上传资料 → 服务端解析切片入库
+2. 提问时先检索相关片段
+3. 片段 + 问题 → 一起交给大模型回答</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 测试 03 · 图像识别 ========== -->
+  <section class="yqh_case">
+    <div class="yqh_case-head">
+      <div class="yqh_case-title-block">
+        <div class="yqh_case-num">03 / VISION</div>
+        <h2 class="yqh_case-title"><em>图像</em>识别</h2>
+      </div>
+      <div class="yqh_case-tags">
+        <span class="yqh_tag yqh-tag--method">POST</span>
+        <span class="yqh_tag">Qwen3-VL-8B-Instruct</span>
+        <span class="yqh_tag">多模态理解</span>
+      </div>
+    </div>
+
+    <div class="yqh_api">
+      <span class="yqh_api-method">POST</span>
+      <span class="yqh_api-path">/api/vision/detect</span>
+      <span class="yqh_api-note">支持 jpg/png/webp 等常见格式</span>
+    </div>
+
+    <div class="yqh_shot-wrap">
+      <img class="yqh_shot" src="ai-imgs/yqh_ai_vision.png" alt="图像识别测试截图">
+    </div>
+
+    <div class="yqh_demo">
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">识别输出</div>
+        <div class="yqh_demo-content">森林野餐场景,五只卡通动物围坐野餐:两只棕熊、一只松鼠、一只狐狸和一只戴菠萝帽的猴子。它们手持食物,面带微笑互动,背景是青翠松林与蓝天白云,画面色彩明亮,构图饱满,动物表情生动,氛围温馨欢乐。无文字内容。</div>
+      </div>
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">输入文件</div>
+        <div class="yqh_demo-content">文件: ebbbbbe-...c390c.jpg
+大小: 225.7 KB
+Tokens: 1363</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 测试 04 · 语音识别 ========== -->
+  <section class="yqh_case">
+    <div class="yqh_case-head">
+      <div class="yqh_case-title-block">
+        <div class="yqh_case-num">04 / ASR</div>
+        <h2 class="yqh_case-title"><em>语音</em>识别</h2>
+      </div>
+      <div class="yqh_case-tags">
+        <span class="yqh_tag yqh-tag--method">POST</span>
+        <span class="yqh_tag">qwen audio 3.0 asr flash</span>
+        <span class="yqh_tag">支持 wav/mp3/m4a/aac/ogg/flac</span>
+      </div>
+    </div>
+
+    <div class="yqh_api">
+      <span class="yqh_api-method">POST</span>
+      <span class="yqh_api-path">/api/asr/transcribe</span>
+      <span class="yqh_api-note">form-data: audio · ≤ 20MB · 建议 ≤ 5 分钟</span>
+    </div>
+
+    <div class="yqh_shot-wrap">
+      <img class="yqh_shot" src="ai-imgs/yqh_ai_asr.png" alt="语音识别测试截图">
+    </div>
+
+    <div class="yqh_demo">
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">转写结果</div>
+        <div class="yqh_demo-content">这是一个问题。</div>
+      </div>
+      <div class="yqh_demo-block">
+        <div class="yqh_demo-label">输入文件</div>
+        <div class="yqh_demo-content">文件: video(53).mp4
+大小: 5.48 MB
+时长: 2 秒</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <p class="yqh_foot">24002120419 于清华 · AI APPLICATIONS TEST DEMO</p>
+
+</div>
+</body>
+</html>
